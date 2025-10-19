@@ -1,6 +1,10 @@
+<div align="center">
+
 # Global Launch Options Plugin
 
 A Millennium plugin that automatically applies custom launch options to all Steam games.
+
+</div>
 
 ## ✨ Features
 
