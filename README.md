@@ -2,7 +2,7 @@
 
 A Millennium plugin that automatically applies custom launch options to all Steam games.
 
-## Features
+## ✨ Features
 
 - **Global Launch Options**: Apply launch options to all games automatically
 - **Smart Merging**: Combines global options with existing game-specific launch options
@@ -95,7 +95,7 @@ ln -s "$(pwd)" ~/.local/share/millennium/plugins/global-launch-options
 4. Enable "Global Launch Options"
 5. Restart Steam once more
 
-## Configuration
+## ⚙️ Configuration
 
 Edit `config.json` in the plugin directory:
 
@@ -111,7 +111,7 @@ Edit `config.json` in the plugin directory:
 - **globalLaunchOptions**: Launch options to apply to all games
 - **excludedGameIds**: Comma-separated Steam app IDs to exclude
 
-## How It Works
+## 🔧 How It Works
 
 The plugin hooks into Steam's game launch process and:
 1. Gets the current launch options for the game
@@ -119,11 +119,11 @@ The plugin hooks into Steam's game launch process and:
 3. Temporarily applies the combined options during launch
 4. Restores original options after launch
 
-## Requirements
+## 📋 Requirements
 
 - Millennium (plugin made on v2.30.0+)
 - Steam Client (any recent version)
 
-## License
+## 📄 License
 
 MIT License - See LICENSE file for details
