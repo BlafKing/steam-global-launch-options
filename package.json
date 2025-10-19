@@ -1,0 +1,32 @@
+{
+	"scripts": {
+		"dev": "millennium-ttc --build dev",
+		"build": "millennium-ttc --build prod"
+	},
+	"devDependencies": {
+		"@babel/preset-env": "^7.26.0",
+		"@babel/preset-react": "^7.25.9",
+		"@babel/traverse": "^7.27.0",
+		"@types/react": "^19.1.6",
+		"@types/react-dom": "^19.1.6",
+		"@types/webpack": "^5.28.5"
+	},
+	"type": "module",
+	"name": "global-launch-options",
+	"version": "1.0.0",
+	"description": "A plugin that automatically applies custom launch options globally across all your Steam games.",
+	"main": "./frontend/index.tsx",
+	"author": "BlafKing",
+	"license": "MIT",
+	"keywords": ["millennium", "steam", "launch-options", "global", "plugin"],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/BlafKing/steam-global-launch-options.git"
+	},
+	"dependencies": {
+		"@steambrew/api": "^5.2.4",
+		"@steambrew/webkit": "^5.3.3",
+		"@steambrew/client": "^5.3.2",
+		"@steambrew/ttc": "^2.5.3"
+	}
+}

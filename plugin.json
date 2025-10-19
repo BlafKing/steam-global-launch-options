@@ -1,0 +1,7 @@
+{
+    "$schema": "https://raw.githubusercontent.com/SteamClientHomebrew/Millennium/main/src/sys/plugin-schema.json",
+
+    "name": "global_launch_options",
+    "common_name": "Global Launch Options",
+    "description": "Set default launch options that automatically apply to all Steam games."
+}
