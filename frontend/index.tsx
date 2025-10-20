@@ -1,4 +1,4 @@
-import { Millennium, definePlugin } from '@steambrew/client';
+import { definePlugin, callable } from '@steambrew/client';
 
 // Plugin state tracking
 let hooksInjected = false;
@@ -9,8 +9,8 @@ let lastConfigFetch = 0;
 const CONFIG_CACHE_TTL = 1000; // Cache timeout in milliseconds
 
 const plugin = {
-	prefix: '%cGlobal Launch Options:%c',
-	style: 'color: #cdd6f4; background-color: #cba6f7; padding: 2px 4px; border-radius: 3px;',
+	prefix: '%cGlobal Launch Options%c',
+	style: 'color: #cdd6f4; background-color: #746292; padding: 2px 4px; border-radius: 3px;',
 
 	log(...args: any[]): void {
 		console.log(plugin.prefix, plugin.style, '', ...args);
@@ -34,8 +34,9 @@ async function fetchCurrentConfig() {
 	}
 
 	try {
-		// Fetch live config from backend
-		const configJson = await Millennium.callServerMethod("Backend.get_hook_config");
+		// Fetch live config from backend using callable API
+		const getHookConfig = callable<[], string>("Backend.get_hook_config");
+		const configJson = await getHookConfig();
 		const config = JSON.parse(configJson);
 
 		// Update cache
@@ -193,6 +194,7 @@ function mergeLaunchOptions(originalOptions: string, globalOptions: string): str
  */
 function injectLaunchHooks() {
 	if (hooksInjected) return;
+	plugin.log('Injecting launch hooks...');
 
 	// Track current launching app and its original launch options
 	let currentLaunchingAppId: string | null = null;
@@ -211,6 +213,7 @@ function injectLaunchHooks() {
 
 			if (excludedAppIds.includes(appId.toString())) {
 				currentLaunchingAppId = null;
+				plugin.log(`App ${appId} is excluded from global launch options, skipping modifications.`);
 			} else {
 				currentLaunchingAppId = appId;
 			}
@@ -277,6 +280,7 @@ function injectLaunchHooks() {
 	}
 
 	hooksInjected = true;
+	plugin.log('Launch hooks injected successfully.');
 }
 
 /**
