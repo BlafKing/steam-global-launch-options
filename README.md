@@ -101,7 +101,7 @@ ln -s "$(pwd)" ~/.local/share/millennium/plugins/global-launch-options
 
 ## ⚙️ Configuration
 
-Edit `config.json` in the plugin directory:
+The `config.json` file is automatically created in the plugin directory after enabling the plugin. You can then edit it to customize your settings:
 
 ```json
 {
