@@ -31,7 +31,21 @@ A Millennium plugin that automatically applies custom launch options to all Stea
    - Click **Install**
    - Restart Steam when prompted
 
-### Method 2: Build from Source
+### Method 2: Manual installation
+
+<details>
+<summary><b>Option A: Download Pre-built Release (Recommended)</b></summary>
+
+#### Download from Releases
+
+1. Go to the [Releases](https://github.com/BlafKing/steam-global-launch-options/releases) page
+2. Download the latest release ZIP file
+3. Extract the ZIP file to get the plugin folder
+
+</details>
+
+<details>
+<summary><b>Option B: Build from Source</b></summary>
 
 #### Step 1: Clone the Repository
 
@@ -65,33 +79,22 @@ pnpm run dev
 ```bash
 pnpm run build
 ```
+</details>
 
-#### Step 4: Install to Steam
+* #### Copy the `steam-global-launch-options` folder to plugins directory:
 
-**Option A: Copy to plugins directory**
-
-```bash
+```
 # Windows
-copy /R . "C:\Program Files (x86)\Steam\plugins\global-launch-options"
+C:\Program Files (x86)\Steam\plugins
 
 # Linux
-cp -r . ~/.local/share/millennium/plugins/global-launch-options
+~/.local/share/millennium/plugins
 
 # macOS
-cp -r . ~/Library/Application\ Support/millennium/plugins/global-launch-options
+~/Library/Application\ Support/millennium/plugins
 ```
 
-**Option B: Create symbolic link (for development)**
-
-```bash
-# Windows (run as Administrator)
-mklink /D "C:\Program Files (x86)\Steam\plugins\global-launch-options" "%CD%"
-
-# Linux/macOS
-ln -s "$(pwd)" ~/.local/share/millennium/plugins/global-launch-options
-```
-
-#### Step 5: Activate Plugin in Steam
+* #### Activate Plugin in Steam
 
 1. Completely close Steam (including system tray)
 2. Restart Steam

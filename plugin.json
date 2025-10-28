@@ -3,5 +3,6 @@
 
     "name": "global_launch_options",
     "common_name": "Global Launch Options",
+    "version": "1.0.0",
     "description": "Set default launch options that automatically apply to all Steam games."
 }
