@@ -136,7 +136,6 @@ The plugin hooks into Steam's game launch process and:
 4. Temporarily applies the combined options during launch
 5. Restores original options after launch
 
-
 ## 📋 Requirements
 
 - Millennium v2.34.0 or higher

@@ -312,20 +312,37 @@ const SingleSetting = (props: { name: keyof PluginConfig; type: string; label: s
 
 const SettingsContent = () => {
 	return (
-		<div>
-			<SingleSetting 
-				name="globalLaunchOptions" 
-				type="text" 
-				label="Global Launch Options" 
-				description="Launch options to apply to all games (e.g., MANGOHUD=1 %command%). Use %command% as placeholder for the game executable." 
-			/>
-			<SingleSetting 
-				name="excludedGameIds" 
-				type="text" 
-				label="Excluded Game IDs" 
-				description="Comma-separated list of Steam App IDs to exclude from global launch options (e.g., 570,730,440)" 
-			/>
-		</div>
+		<>
+			<style>{`
+				.DialogInput_Wrapper._DialogLayout.Panel {
+					width: 100%;
+					max-width: 400px;
+				}
+				div:has(> .DialogInput_Wrapper._DialogLayout.Panel) {
+					justify-content: flex-end;
+				}
+				.global-launch-options-settings > div > div > div:nth-child(1) {
+					flex-grow: 0 !important;
+				}
+				.global-launch-options-settings > div > div > div:nth-child(2) {
+					flex-grow: 1;
+				}
+			`}</style>
+			<div className="global-launch-options-settings">
+				<SingleSetting 
+					name="globalLaunchOptions" 
+					type="text" 
+					label="Global Launch Options" 
+					description="Launch options to apply to all games (e.g., MANGOHUD=1 %command%). Use %command% as placeholder for the game executable." 
+				/>
+				<SingleSetting 
+					name="excludedGameIds" 
+					type="text" 
+					label="Excluded Game IDs" 
+					description="Comma-separated list of Steam App IDs to exclude from global launch options (e.g., 570,730,440)" 
+				/>
+			</div>
+		</>
 	);
 };
 
