@@ -1,12 +1,28 @@
-import { definePlugin, callable } from '@steambrew/client';
+import { definePlugin, Field, TextField, IconsModule } from '@steambrew/client';
+import React, { useState, useEffect } from 'react';
+
+// JSX namespace declaration for JSX factory
+declare global {
+	namespace JSX {
+		interface IntrinsicElements {
+			[elemName: string]: any;
+		}
+	}
+}
 
 // Plugin state tracking
 let hooksInjected = false;
 
-// Configuration caching to avoid excessive backend calls
-let configCache: any = null;
-let lastConfigFetch = 0;
-const CONFIG_CACHE_TTL = 1000; // Cache timeout in milliseconds
+// Plugin configuration with defaults
+interface PluginConfig {
+	globalLaunchOptions: string;
+	excludedGameIds: string;
+}
+
+let pluginConfig: PluginConfig = {
+	globalLaunchOptions: '',
+	excludedGameIds: ''
+};
 
 const plugin = {
 	prefix: '%cGlobal Launch Options%c',
@@ -22,41 +38,11 @@ const plugin = {
 };
 
 /**
- * Fetches current plugin configuration from backend with caching
+ * Gets the current configuration from memory
  * @returns Current plugin configuration object
  */
-async function fetchCurrentConfig() {
-	const now = Date.now();
-
-	// Return cached config if still fresh
-	if (configCache && (now - lastConfigFetch) < CONFIG_CACHE_TTL) {
-		return configCache;
-	}
-
-	try {
-		// Fetch live config from backend using callable API
-		const getHookConfig = callable<[], string>("Backend.get_hook_config");
-		const configJson = await getHookConfig();
-		const config = JSON.parse(configJson);
-
-		// Update cache
-		configCache = config;
-		lastConfigFetch = now;
-
-		return config;
-	} catch (error) {
-		plugin.error('Failed to fetch config from backend:', error);
-
-		// Fallback to safe defaults
-		const defaultConfig = {
-			globalLaunchOptions: '',
-			excludedGameIds: ''
-		};
-
-		configCache = defaultConfig;
-		lastConfigFetch = now;
-		return defaultConfig;
-	}
+function getCurrentConfig() {
+	return pluginConfig;
 }
 
 /**
@@ -190,7 +176,7 @@ function mergeLaunchOptions(originalOptions: string, globalOptions: string): str
 
 /**
  * Injects hooks into Steam's game launch process
- * Hooks RunGame to capture app launches and ContinueGameAction to modify launch options
+ * Uses RegisterForGameActionUserRequest to detect launches from any source
  */
 function injectLaunchHooks() {
 	if (hooksInjected) return;
@@ -200,11 +186,16 @@ function injectLaunchHooks() {
 	let currentLaunchingAppId: string | null = null;
 	let originalLaunchOptions: string | null = null;
 
-	// Hook Steam's RunGame method to capture app launch attempts
-	if (window.SteamClient && window.SteamClient.Apps && window.SteamClient.Apps.RunGame) {
-		const originalRunGame = window.SteamClient.Apps.RunGame;
-		window.SteamClient.Apps.RunGame = async function (appId: string, ...args: any[]) {
-			const config = await fetchCurrentConfig();
+	// Register for game action user requests - this fires for ALL launch sources
+	// (Steam UI, desktop shortcuts, Steam URLs, etc.)
+	if (window.SteamClient?.Apps?.RegisterForGameActionUserRequest) {
+		window.SteamClient.Apps.RegisterForGameActionUserRequest((_gameActionId, appId, action, _requestedAction, _appId2) => {
+			// Only process LaunchApp actions
+			if (action !== 'LaunchApp') {
+				return;
+			}
+
+			const config = getCurrentConfig();
 
 			// Check if app is in exclusion list
 			const excludedAppIds = config.excludedGameIds
@@ -216,20 +207,22 @@ function injectLaunchHooks() {
 				plugin.log(`App ${appId} is excluded from global launch options, skipping modifications.`);
 			} else {
 				currentLaunchingAppId = appId;
+				plugin.log(`Launching app ${appId}`);
 			}
-			plugin.log(`Launching app ${appId}`);
-			return originalRunGame.apply(this, [appId, ...args]);
-		};
+		});
+
+		plugin.log('Registered for GameActionUserRequest events');
+	} else {
+		plugin.error('RegisterForGameActionUserRequest API not available');
 	}
 
 	// Hook Steam's ContinueGameAction to modify launch options during game start
 	if (window.SteamClient && window.SteamClient.Apps && window.SteamClient.Apps.ContinueGameAction) {
 		const originalContinueGameAction = window.SteamClient.Apps.ContinueGameAction;
 		window.SteamClient.Apps.ContinueGameAction = async function (gameActionId: number, action: string) {
-
 			// Intercept when Steam is creating the game process
 			if (action === 'CreatingProcess' && currentLaunchingAppId) {
-				const config = await fetchCurrentConfig();
+				const config = getCurrentConfig();
 
 				if (config.globalLaunchOptions) {
 					try {
@@ -260,13 +253,12 @@ function injectLaunchHooks() {
 							} catch (e) {
 								plugin.error('Failed to restore launch options:', e);
 							}
-						}, 5000); // 5 second delay to allow game startup
+						}, 20000);
 
 					} catch (e) {
 						plugin.error('Error processing launch options:', e);
 					}
-				}
-				else {
+				} else {
 					plugin.log('No global options configured.');
 				}
 
@@ -284,12 +276,79 @@ function injectLaunchHooks() {
 }
 
 /**
+ * Settings component for the in-steam config UI
+ */
+const SingleSetting = (props: { name: keyof PluginConfig; type: string; label: string; description: string; }) => {
+	const [textValue, setTextValue] = useState('');
+
+	const saveConfig = () => {
+		localStorage.setItem("global_launch_options.config", JSON.stringify(pluginConfig));
+		plugin.log('Configuration saved:', pluginConfig);
+	};
+
+	useEffect(() => {
+		if (props.type === "text") {
+			setTextValue(pluginConfig[props.name]);
+		}
+	}, []);
+
+	if (props.type === "text") {
+		return (
+			<Field label={props.label} description={props.description} bottomSeparator="standard" focusable>
+				<TextField 
+					value={textValue} 
+					onChange={(e: React.ChangeEvent<HTMLInputElement>) => { 
+						const value = e.currentTarget.value;
+						setTextValue(value);
+						pluginConfig[props.name] = value; 
+						saveConfig(); 
+					}} 
+				/>
+			</Field>
+		);
+	}
+	return null;
+};
+
+const SettingsContent = () => {
+	return (
+		<div>
+			<SingleSetting 
+				name="globalLaunchOptions" 
+				type="text" 
+				label="Global Launch Options" 
+				description="Launch options to apply to all games (e.g., MANGOHUD=1 %command%). Use %command% as placeholder for the game executable." 
+			/>
+			<SingleSetting 
+				name="excludedGameIds" 
+				type="text" 
+				label="Excluded Game IDs" 
+				description="Comma-separated list of Steam App IDs to exclude from global launch options (e.g., 570,730,440)" 
+			/>
+		</div>
+	);
+};
+
+/**
  * Millennium plugin entry point
  * Initializes the global launch options plugin
  */
 export default definePlugin(() => {
+	plugin.log('Global Launch Options plugin initializing...');
+	
+	// Load configuration from localStorage
+	const storedConfig = JSON.parse(localStorage.getItem("global_launch_options.config") || "{}");
+	pluginConfig = { ...pluginConfig, ...storedConfig };
+	plugin.log('Loaded config:', pluginConfig);
+	
 	// Inject hooks on plugin load
 	setTimeout(injectLaunchHooks, 500);
+	
+	plugin.log('Plugin initialization complete');
 
-	return null; // No UI component needed
+	return {
+		title: "Global Launch Options",
+		icon: <IconsModule.Settings />,
+		content: <SettingsContent />,
+	};
 });

@@ -13,7 +13,7 @@
 	},
 	"type": "module",
 	"name": "global-launch-options",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"description": "A plugin that automatically applies custom launch options globally across all your Steam games.",
 	"main": "./frontend/index.tsx",
 	"author": "BlafKing",

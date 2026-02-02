@@ -11,6 +11,7 @@ A Millennium plugin that automatically applies custom launch options to all Stea
 - **Global Launch Options**: Apply launch options to all games automatically
 - **Smart Merging**: Combines global options with existing game-specific launch options
 - **Game Exclusions**: Exclude specific games from global options
+- **Universal Launch Detection**: Works regardless of launch source (Steam UI, desktop shortcuts, Steam URLs, etc.)
 - **Real-time Config**: Edit settings without restarting Steam
 - **Zero Interference**: Temporarily applies options during game launch, doesn't permanently modify Steam data
 
@@ -104,32 +105,53 @@ C:\Program Files (x86)\Steam\plugins
 
 ## ⚙️ Configuration
 
-The `config.json` file is automatically created in the plugin directory after enabling the plugin. You can then edit it to customize your settings:
+Configure the plugin directly in Steam through the Millennium settings interface:
 
-```json
-{
-  "globalLaunchOptions": "MANGOHUD=1 %command%",
-  "excludedGameIds": "730,440"
-}
-```
+1. Open **Millennium Library Manager**
+2. Click on **Global Launch Options**
+3. Configure the following settings:
 
 ### Settings
 
-- **globalLaunchOptions**: Launch options to apply to all games
-- **excludedGameIds**: Comma-separated Steam app IDs to exclude
+- **Global Launch Options**: Launch options to apply to all games (e.g., `MANGOHUD=1 %command%`)
+  - Use `%command%` as a placeholder for the game executable
+  - You can add environment variables, wrappers, or game arguments
+  
+- **Excluded Game IDs**: Comma-separated Steam App IDs to exclude from global options (e.g., `730,440,570`)
+  - Find App IDs on [SteamDB](https://steamdb.info/)
+
+### Example Configuration
+
+**Enable MangoHUD for all games:**
+```
+MANGOHUD=1 %command%
+```
 
 ## 🔧 How It Works
 
 The plugin hooks into Steam's game launch process and:
-1. Gets the current launch options for the game
-2. Parses and merges them with your global options
-3. Temporarily applies the combined options during launch
-4. Restores original options after launch
+1. Detects when any game is launched (from Steam UI, desktop shortcuts, Steam URLs, etc.)
+2. Gets the current launch options for the game
+3. Parses and merges them with your global options
+4. Temporarily applies the combined options during launch
+5. Restores original options after launch
+
 
 ## 📋 Requirements
 
-- Millennium (plugin made on v2.30.0+)
+- Millennium v2.34.0 or higher
 - Steam Client (any recent version)
+
+## 📝 Changelog
+
+### v1.1.0:
+    - Changed game detection method so global launch options apply regardless of launch source
+      (Steam UI, desktop shortcuts, Steam URLs, etc.)
+      
+    - Switched from local config file to Millennium's in-steam config UI
+    
+### v1.0.0:
+    - Initial release
 
 ## 📄 License
 
