@@ -136,6 +136,7 @@ function parseLaunchOptions(options: string): ParsedLaunchOptions {
 /**
  * Intelligently merges original app launch options with global launch options
  * Ensures proper ordering and prevents duplicate %command% placeholders
+ * Removes duplicate environment variables and arguments
  * 
  * @param originalOptions - Current launch options for the app
  * @param globalOptions - Global launch options to apply
@@ -145,11 +146,25 @@ function mergeLaunchOptions(originalOptions: string, globalOptions: string): str
 	const original = parseLaunchOptions(originalOptions);
 	const global = parseLaunchOptions(globalOptions);
 
-	// Combine pre-command parts (environment vars, wrappers)
-	const combinedPreCommand = [...original.preCommand, ...global.preCommand];
+	// Helper function to deduplicate array while preserving order (keeping first occurrence)
+	const deduplicateArray = (arr: string[]): string[] => {
+		const seen = new Set<string>();
+		return arr.filter(item => {
+			if (seen.has(item)) {
+				return false;
+			}
+			seen.add(item);
+			return true;
+		});
+	};
 
-	// Combine post-command parts (game arguments)
-	const combinedPostCommand = [...original.postCommand, ...global.postCommand];
+	// Combine pre-command parts (environment vars, wrappers) with global options taking precedence
+	// By putting global first, we ensure global settings override game-specific ones
+	const combinedPreCommand = deduplicateArray([...global.preCommand, ...original.preCommand]);
+
+	// Combine post-command parts (game arguments) with game-specific taking precedence
+	// Game-specific arguments should come first to allow them to override global ones
+	const combinedPostCommand = deduplicateArray([...original.postCommand, ...global.postCommand]);
 
 	// Build final launch options string
 	let result = '';
@@ -185,6 +200,33 @@ function injectLaunchHooks() {
 	// Track current launching app and its original launch options
 	let currentLaunchingAppId: string | null = null;
 	let originalLaunchOptions: string | null = null;
+	// Track pending restore operations (appId -> {timeout, originalOptions})
+	const pendingRestores = new Map<string, { timeoutId: number, originalOptions: string }>();
+
+	// Register for game action end - fires when a game closes
+	if (window.SteamClient?.Apps?.RegisterForGameActionEnd) {
+		window.SteamClient.Apps.RegisterForGameActionEnd(() => {
+			// Check if we have any pending restores to clean up
+			
+			for (const [appId, restore] of pendingRestores.entries()) {
+				// Restore immediately on game launch end
+				try {
+					window.SteamClient.Apps.SetAppLaunchOptions(
+						parseInt(appId),
+						restore.originalOptions
+					);
+					clearTimeout(restore.timeoutId);
+					pendingRestores.delete(appId);
+					plugin.log(`Restored launch options for app ${appId} on game launch end`);
+				} catch (e) {
+					plugin.error(`Failed to restore launch options for app ${appId}:`, e);
+				}
+			}
+		});
+		plugin.log('Registered for GameActionEnd events');
+	} else {
+		plugin.error('RegisterForGameActionEnd API not available');
+	}
 
 	// Register for game action user requests - this fires for ALL launch sources
 	// (Steam UI, desktop shortcuts, Steam URLs, etc.)
@@ -240,20 +282,34 @@ function injectLaunchHooks() {
 							mergedOptions
 						);
 
-						// Step 4: Schedule restoration of original options after game starts
+						// Step 4: Schedule restoration with timeout as fallback
 						const appIdToRestore = currentLaunchingAppId;
 						const optionsToRestore = originalLaunchOptions;
 
-						setTimeout(() => {
+						// Clear any existing pending restore for this app
+						if (pendingRestores.has(appIdToRestore)) {
+							clearTimeout(pendingRestores.get(appIdToRestore)!.timeoutId);
+						}
+
+						// Set up timeout fallback (in case GameActionEnd doesn't fire)
+						const timeoutId = window.setTimeout(() => {
 							try {
 								window.SteamClient.Apps.SetAppLaunchOptions(
 									parseInt(appIdToRestore),
 									optionsToRestore
 								);
+								pendingRestores.delete(appIdToRestore);
+								plugin.log(`Restored launch options for app ${appIdToRestore} (timeout fallback)`);
 							} catch (e) {
 								plugin.error('Failed to restore launch options:', e);
 							}
 						}, 20000);
+
+						// Track this restore operation
+						pendingRestores.set(appIdToRestore, {
+							timeoutId,
+							originalOptions: optionsToRestore
+						});
 
 					} catch (e) {
 						plugin.error('Error processing launch options:', e);
