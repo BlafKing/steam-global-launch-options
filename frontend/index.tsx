@@ -102,18 +102,34 @@ function parseLaunchOptions(options: string): ParsedLaunchOptions {
 	}
 
 	const parts = options.split('%command%');
+	var regex = /(?<=;)|(?<=&&)|(?<=&)/g;
+
+	const splitArray = (arr: string[]): string[] => {
+		for(let i=0; i<arr.length; i++){
+			if (!arr[i].match(regex)){;
+				const item = arr[i].trim().split(/\s+/).filter(p => p.length > 0);
+				arr.splice(i, 1, ...item);
+			};
+		};
+		return(arr)
+	};
 
 	if (parts.length === 1) {
 		// No %command% found - treat as post-command arguments
+		const unsplitPostCommand = parts[0].trim().split(regex).filter(p => p.length > 0).map(str => str.trim());
+		const postCommand = splitArray(unsplitPostCommand);
+
 		return {
 			preCommand: [],
-			postCommand: parts[0].trim().split(/\s+/).filter(p => p.length > 0),
+			postCommand,
 			hasCommand: false
 		};
 	} else if (parts.length === 2) {
 		// Normal case: single %command% found
-		const preCommand = parts[0].trim().split(/\s+/).filter(p => p.length > 0);
-		const postCommand = parts[1].trim().split(/\s+/).filter(p => p.length > 0);
+		const unsplitPreCommand = parts[0].trim().split(regex).filter(p => p.length > 0).map(str => str.trim());
+		const unsplitPostCommand = parts[1].trim().split(regex).filter(p => p.length > 0).map(str => str.trim());
+		const preCommand = splitArray(unsplitPreCommand);
+		const postCommand = splitArray(unsplitPostCommand);
 
 		return {
 			preCommand,
@@ -122,8 +138,10 @@ function parseLaunchOptions(options: string): ParsedLaunchOptions {
 		};
 	} else {
 		// Multiple %command% found - merge post-command parts
-		const preCommand = parts[0].trim().split(/\s+/).filter(p => p.length > 0);
-		const postCommand = parts.slice(1).join(' ').trim().split(/\s+/).filter(p => p.length > 0);
+		const unsplitPreCommand = parts[0].trim().split(regex).filter(p => p.length > 0).map(str => str.trim());
+		const preCommand = splitArray(unsplitPreCommand);
+		const unsplitPostCommand = parts.slice(1).join(' ').trim().split(regex).filter(p => p.length > 0).map(str => str.trim());
+		const postCommand = splitArray(unsplitPostCommand);
 
 		return {
 			preCommand,
